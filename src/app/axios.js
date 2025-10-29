@@ -15,19 +15,11 @@ axiosInstance.interceptors.response.use(
       (error.response.status === 401 || error.response.status === 403)
     ) {
       if (pathname === "/admin") {
-        window.location.href = "/unauthorized";
+        window.location.href = "/login";
         return Promise.reject(error);
       }
       
-      if (
-        pathname !== "/" &&
-        pathname !== "/login" &&
-        pathname !== "/signup" &&
-        pathname !== "/shop" &&
-        !pathname.startsWith("/product/")
-      ) {
-        window.location.href = "/";
-      }
+   
     }
 
     return Promise.reject(error);

@@ -13,25 +13,19 @@ export const useAdminAuth = () => {
   useEffect(() => {
     const checkAdminAuth = async () => {
       try {
-        // محاولة جلب معلومات المستخدم الحالي من خلال endpoint مؤقت
-        // سنستخدم endpoint موجود للتحقق من الصلاحيات
         const response = await axiosInstance.get('/admin/users');
-        // إذا نجح الطلب، فهذا يعني أن المستخدم مدير
         const userData = { role: 'admin' };
         
         setUser(userData);
         
-        // التحقق من أن المستخدم مدير
         if (userData && userData.role === 'admin') {
           setIsAdmin(true);
         } else {
-          // إذا لم يكن مدير، إعادة توجيه لصفحة الخطأ
-          router.push('/unauthorized');
+          router.push('/login');
         }
       } catch (error) {
         console.error('Admin auth check failed:', error);
-        // إذا فشل التحقق، إعادة توجيه للصفحة الرئيسية
-        router.push('/');
+        router.push('/login');
       } finally {
         setLoading(false);
       }
@@ -43,7 +37,6 @@ export const useAdminAuth = () => {
   return { isAdmin, loading, user };
 };
 
-// Higher Order Component لحماية الصفحات الإدارية
 export const withAdminAuth = (WrappedComponent) => {
   return function AdminProtectedComponent(props) {
     const { isAdmin, loading } = useAdminAuth();
