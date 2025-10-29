@@ -1,7 +1,5 @@
+import SignInPage from './login/page.jsx';
 
-import {SignInPage} from './login/page.jsx';
 export default function Home() {
-return (
-  <SignInPage />
-);
+  return <SignInPage />;
 }
