@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import axiosInstance from "../axios";
 import { useRouter } from "next/navigation";
 import { withAdminAuth } from "../middleware/adminAuth";
@@ -79,15 +79,12 @@ function AdminPage() {
   });
   const [productError, setProductError] = useState("");
 
-  // order dialog
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  // search
   const [productSearch, setProductSearch] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
 
-  // suggestions
   const [colorSuggestions, setColorSuggestions] = useState(COMMON_COLORS);
   const [categorySuggestions, setCategorySuggestions] = useState(COMMON_CATEGORIES);
 
@@ -108,7 +105,7 @@ function AdminPage() {
     };
     
     checkAuth();
-  }, []);
+  }, [loadAll, router]);
 
   useEffect(() => {
     const existingColors = products
@@ -135,7 +132,7 @@ function AdminPage() {
     setCategorySuggestions(allCategories);
   }, [products]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(true);
     setErrorMsg("");
     try {
@@ -207,7 +204,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
 
 
   function ProductImage({ image_url, title, size = 60 }) {
@@ -370,7 +367,6 @@ function AdminPage() {
     try {
       setActionLoading(true);
       await axiosInstance.put("/products/toggle", { id: p.id });
-      // optimistic UI
       setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, is_active: x.is_active ? 0 : 1 } : x)));
     } catch (err) {
       console.error(err);
@@ -380,7 +376,6 @@ function AdminPage() {
     }
   };
 
-  // ORDERS HANDLERS
   const openOrderDetails = (order) => {
     setSelectedOrder(order);
     setOrderDialogOpen(true);
@@ -446,7 +441,24 @@ function AdminPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", py: 6, bgcolor: "#f5f7fb" }}>
+    <Box sx={{ 
+      minHeight: "100vh", 
+      py: 6, 
+      bgcolor: "#f5f7fb",
+      '& .MuiAutocomplete-popper': {
+        zIndex: '10000 !important',
+      },
+      '& .MuiAutocomplete-listbox': {
+        maxHeight: '200px !important',
+        overflow: 'auto !important',
+      },
+      '& .MuiMenu-paper': {
+        zIndex: '10000 !important',
+      },
+      '& .MuiDialog-root': {
+        zIndex: '1300 !important',
+      }
+    }}>
       <Container maxWidth="lg">
         <Paper sx={{ p: 3, mb: 4 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -641,7 +653,29 @@ function AdminPage() {
                         <TableCell>${o.total ?? 0}</TableCell>
                         <TableCell>
                           <FormControl size="small" sx={{ minWidth: 140 }}>
-                            <Select value={o.status || "pending"} onChange={(e) => updateOrderStatus(o.id, e.target.value)}>
+                            <Select 
+                              value={o.status || "pending"} 
+                              onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                              MenuProps={{
+                                PaperProps: {
+                                  style: {
+                                    maxHeight: 200,
+                                    overflow: 'auto',
+                                  },
+                                },
+                                anchorOrigin: {
+                                  vertical: 'bottom',
+                                  horizontal: 'left',
+                                },
+                                transformOrigin: {
+                                  vertical: 'top',
+                                  horizontal: 'left',
+                                },
+                                style: {
+                                  zIndex: 10000
+                                }
+                              }}
+                            >
                               {STATUS_OPTIONS.map((s) => (
                                 <MenuItem key={s} value={s}>
                                   {s}
@@ -727,9 +761,33 @@ function AdminPage() {
         )}
 
         {/* Product Dialog */}
-        <Dialog open={productDialogOpen} onClose={closeProductDialog} fullWidth maxWidth="lg">
+        <Dialog 
+          open={productDialogOpen} 
+          onClose={closeProductDialog} 
+          fullWidth 
+          maxWidth="lg"
+          sx={{
+            zIndex: 1400,
+            '& .MuiDialog-paper': {
+              maxHeight: '90vh',
+              overflow: 'visible',
+              position: 'relative'
+            },
+            '& .MuiDialogContent-root': {
+              overflow: 'visible',
+              paddingBottom: 4
+            }
+          }}
+        >
           <DialogTitle>{editingProduct ? "تعديل المنتج" : "إضافة منتج"}</DialogTitle>
-          <DialogContent dividers>
+          <DialogContent 
+            dividers 
+            sx={{ 
+              overflow: 'visible !important',
+              paddingBottom: 4,
+              position: 'relative'
+            }}
+          >
             <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
                 <TextField label="العنوان" fullWidth value={productForm.title} onChange={(e) => handleProductFormChange("title", e.target.value)} />
@@ -741,7 +799,41 @@ function AdminPage() {
                   value={productForm.category_name}
                   onChange={(_, v) => handleProductFormChange("category_name", v || "")}
                   onInputChange={(_, v) => handleProductFormChange("category_name", v)}
-                  slotProps={{ popper: { sx: { zIndex: 9999 } } }}
+                  slotProps={{ 
+                    popper: { 
+                      sx: { 
+                        zIndex: 10000,
+                        '& .MuiAutocomplete-listbox': {
+                          maxHeight: '200px',
+                          overflow: 'auto'
+                        },
+                        '& .MuiPaper-root': {
+                          maxHeight: '220px'
+                        }
+                      },
+                      placement: 'bottom-start',
+                      disablePortal: false,
+                      modifiers: [
+                        {
+                          name: 'preventOverflow',
+                          enabled: true,
+                          options: {
+                            altAxis: true,
+                            altBoundary: true,
+                            tether: true,
+                            rootBoundary: 'viewport',
+                            padding: 8,
+                          },
+                        },
+                      ]
+                    } 
+                  }}
+                  ListboxProps={{
+                    style: {
+                      maxHeight: '200px',
+                      overflow: 'auto'
+                    }
+                  }}
                   renderInput={(params) => <TextField {...params} label="القسم" placeholder="اختر من الأقسام الموجودة أو اكتب قسم جديد" />}
                   renderOption={(props, option) => (
                     <Box component="li" {...props}>
@@ -769,7 +861,41 @@ function AdminPage() {
                   options={SIZE_OPTIONS}
                   value={productForm.sizes}
                   onChange={(_, v) => handleProductFormChange("sizes", v)}
-                  slotProps={{ popper: { sx: { zIndex: 9999 } } }}
+                  slotProps={{ 
+                    popper: { 
+                      sx: { 
+                        zIndex: 10000,
+                        '& .MuiAutocomplete-listbox': {
+                          maxHeight: '200px',
+                          overflow: 'auto'
+                        },
+                        '& .MuiPaper-root': {
+                          maxHeight: '220px'
+                        }
+                      },
+                      placement: 'bottom-start',
+                      disablePortal: false,
+                      modifiers: [
+                        {
+                          name: 'preventOverflow',
+                          enabled: true,
+                          options: {
+                            altAxis: true,
+                            altBoundary: true,
+                            tether: true,
+                            rootBoundary: 'viewport',
+                            padding: 8,
+                          },
+                        },
+                      ]
+                    } 
+                  }}
+                  ListboxProps={{
+                    style: {
+                      maxHeight: '200px',
+                      overflow: 'auto'
+                    }
+                  }}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => <Chip key={option + index} label={option} {...getTagProps({ index })} />)
                   }
@@ -786,8 +912,41 @@ function AdminPage() {
                   value={productForm.colors}
                   onChange={(_, v) => handleProductFormChange("colors", v)}
                   filterSelectedOptions
-                  slotProps={{ popper: { sx: { zIndex: 9999 } } }}
-                  ListboxProps={{ style: { maxHeight: 320 } }}
+                  slotProps={{ 
+                    popper: { 
+                      sx: { 
+                        zIndex: 10000,
+                        '& .MuiAutocomplete-listbox': {
+                          maxHeight: '300px',
+                          overflow: 'auto'
+                        },
+                        '& .MuiPaper-root': {
+                          maxHeight: '320px'
+                        }
+                      },
+                      placement: 'bottom-start',
+                      disablePortal: false,
+                      modifiers: [
+                        {
+                          name: 'preventOverflow',
+                          enabled: true,
+                          options: {
+                            altAxis: true,
+                            altBoundary: true,
+                            tether: true,
+                            rootBoundary: 'viewport',
+                            padding: 8,
+                          },
+                        },
+                      ]
+                    } 
+                  }}
+                  ListboxProps={{ 
+                    style: { 
+                      maxHeight: 300,
+                      overflow: 'auto'
+                    } 
+                  }}
                   renderTags={(value, getTagProps) => {
                     const getColorValue = (colorName) => {
                       const colorMap = {
@@ -818,7 +977,6 @@ function AdminPage() {
                   }}
                   renderInput={(params) => <TextField {...params} fullWidth label="الألوان" placeholder="اختر من الألوان الموجودة أو اكتب لون جديد" />}
                   renderOption={(props, option) => {
-                    // تحديد لون الخلفية بناءً على اسم اللون
                     const getColorValue = (colorName) => {
                       const colorMap = {
                         'أحمر': '#f44336',
