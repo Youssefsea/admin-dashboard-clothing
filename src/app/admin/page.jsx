@@ -105,7 +105,7 @@ function AdminPage() {
     };
     
     checkAuth();
-  }, [loadAll, router]);
+  }, []);
 
   useEffect(() => {
     const existingColors = products
