@@ -4,7 +4,6 @@ const axiosInstance = axios.create({
   baseURL: "https://backend-clothing-store2.obl.ee",
   withCredentials: true,
 });
-
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -18,8 +17,7 @@ axiosInstance.interceptors.response.use(
         window.location.href = "/login";
         return Promise.reject(error);
       }
-      
-   
+
     }
 
     return Promise.reject(error);
